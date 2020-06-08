@@ -88,7 +88,7 @@ QInt QInt::operator*(const QInt& B) const
 		Q = Q >> 1;
 
 		Q.setBit(2 * 64 - 1, A.getBit(0));
-		A = A.shiftRight(1);
+		A = A >> 1;
 	}
 	
 	return Q;
@@ -233,15 +233,15 @@ QInt QInt::operator~() const
 QInt QInt::operator>>(int nums) const
 {
 	QInt res = *this;
+	bool msb = this->getBit(2 * 64 - 1);
 	while (nums > 0)
 	{
-		for (int i = 2 - 1; i >= 1; i--)
-		{
-			res.abc[i] = res.abc[i] >> 1;
-			if (res.abc[i - 1] & 1)
-				res.abc[i] = (((long long)1 << 63) | res.abc[i]);
-		}
+		res.abc[1] = res.abc[1] >> 1;
+		res.setBit(63, 0);
+		if (res.abc[0] & 1)		
+			res.abc[1] = (((long long)1 << 63) | res.abc[1]);
 		res.abc[0] = res.abc[0] >> 1;
+		res.setBit(2 * 64 - 1, msb);
 		nums--;
 	}
 	return res;
@@ -386,27 +386,6 @@ void QInt::divide(const QInt& divisor, QInt& div, QInt& mod) const
 		mod = mod.toInverse();
 	if (isDNegative + isMNegative == 1) //Neu so bi chia va so chia trai dau thi doi dau thuong
 		div = div.toInverse();
-}
-
-QInt QInt::shiftRight(int nums) const
-{
-	QInt res = *this;
-	while (nums > 0)
-	{
-		bool msb = res.getBit(2 * 64 - 1);
-		for (int i = 2 - 1; i >= 1; i--)
-		{
-			res.abc[i] = res.abc[i] >> 1;
-			if (res.abc[i - 1] & 1)
-			{
-				res.abc[i] = (((long long)1 << 63) | res.abc[i]);
-			}
-		}
-		res.abc[0] = res.abc[0] >> 1;
-		res.setBit(2 * 64 - 1, msb);
-		nums--;
-	}
-	return res;
 }
 
 QInt decToBin(string src)
@@ -614,4 +593,3 @@ string QInt::toBinStr() const
 	}
 	return res;
 }
-
