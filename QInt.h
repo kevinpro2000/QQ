@@ -49,7 +49,6 @@ public:
 
 
 	void divide(const QInt& divisor, QInt& div, QInt& mod) const;
-	QInt shiftRight(int nums) const;
 	friend QInt plusQInt(const QInt& A, const QInt& B);
 
 	friend QInt decToBin(string src);
