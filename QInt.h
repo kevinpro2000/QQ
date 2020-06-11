@@ -6,11 +6,14 @@
 using namespace std;
 
 #define HEX_CHAR "0123456789ABCDEF"
+#define QINT_BIT_SIZE 128
+#define LLONG_BIT_SIZE 64
+#define DATA_ARR_SIZE 2
 
 class QInt
 {
 private:
-	long long abc[2];
+	long long dataArr[2];
 public:
 	QInt();
 	~QInt();
@@ -29,12 +32,9 @@ public:
 	QInt operator* (const QInt& B) const;
 	QInt operator/ (const QInt& B) const;
 
-	bool operator> (const QInt& B) const;
-	bool operator< (const QInt& B) const;
+
 	bool operator== (const QInt& B) const;
 	bool operator!= (const QInt& B) const;
-	bool operator>= (const QInt& B) const;
-	bool operator<= (const QInt& B) const;
 	QInt& operator= (const QInt& B);
 
 	QInt operator& (const QInt& B) const;
@@ -44,8 +44,8 @@ public:
 
 	QInt operator>> (int nums) const;
 	QInt operator<< (int nums) const;
-	QInt rol(int nums) const;
-	QInt ror(int nums) const;
+	QInt rol() const;
+	QInt ror() const;
 
 
 	void divide(const QInt& divisor, QInt& div, QInt& mod) const;
@@ -61,10 +61,3 @@ public:
 
 	string toBinStr() const;
 };
-
-QInt decToBin(string src);
-QInt hexToBin(string src);
-string binToDec(const QInt& src);
-string binToHex(const QInt& src);
-QInt plusQInt(const QInt& A, const QInt& B);
-string Upstring(string a);

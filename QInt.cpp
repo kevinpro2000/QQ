@@ -1,291 +1,212 @@
-#include "QInt.h"
+﻿#include "QInt.h"
 
-QInt::QInt()
+QInt::QInt()//Hàm khởi tạo QInt mặc định
 {
-	fill(abc, abc + 2, 0);
+	fill(dataArr, dataArr + DATA_ARR_SIZE, 0);//Gán tất cả các bit = 0
 }
 
-QInt::~QInt()
+QInt::~QInt()//Hàm phá hủy mặc định
 {
 }
 
-QInt QInt::One()
+QInt QInt::One()//Hàm tạo số 1 kiểu QInt
 {
-	static QInt staticOne;
-	static bool oneInit = false;
-	if (!oneInit)
-	{
-		fill(staticOne.abc, staticOne.abc + 2, 0);
-		oneInit = true;
-	}
-	staticOne.abc[2 - 1] = 1;
+	static QInt staticOne;//Khởi tạo biến static để chỉ cần khởi tạo 1 lần nhưng sử dụng trong toàn bộ chương trình
+	fill(staticOne.dataArr, staticOne.dataArr + DATA_ARR_SIZE, 0);//Gán tất cả các bit = 0
+	staticOne.dataArr[DATA_ARR_SIZE - 1] = 1;//Gán bit cuối = 1
 	return staticOne;
 }
 
 QInt QInt::Zero()
 {
-	static QInt staticZero;
-	static bool zeroInit = false;
-	if (!zeroInit)
-	{
-		fill(staticZero.abc, staticZero.abc + 2, 0);
-		zeroInit = true;
-	}
+	static QInt staticZero;//Khởi tạo biến static để chỉ cần khởi tạo 1 lần nhưng sử dụng trong toàn bộ chương trình
+	fill(staticZero.dataArr, staticZero.dataArr + DATA_ARR_SIZE, 0);//Gán tất cả các bit = 0
 	return staticZero;
 }
 
-bool QInt::getBit(int pos) const
+bool QInt::getBit(int pos) const//Truyền vào vị trí pos của bit cần lấy (tính từ trái sang phải)
 {
-	int bytePos = 2 - 1 - pos / 64;
-	int bitPos = pos % 64;
-	return ((this->abc[bytePos] >> bitPos) & 1);
+	int dataArrPos = DATA_ARR_SIZE - 1 - (QINT_BIT_SIZE - 1 - pos) / LLONG_BIT_SIZE;//Tính vị trí pos truyền vào nằm ở phần tử nào trong dataArr
+	int bitShift = (QINT_BIT_SIZE - 1 - pos) % 64;//Tính số bit cần dịch phải để khiến cho bit ở vị trí pos dịch tới cuối cùng
+	return ((this->dataArr[dataArrPos] >> bitShift) & 1);//thực hiện toán tử & với 1 để trả về bit cần lấy
 }
 
-void QInt::setBit(int pos, bool value)
+void QInt::setBit(int pos, bool value)//Truyền vào vị trí pos của bit cần gán (tính từ trái sang phải), và giá trị gán là 0 hay 1 
 {
-	int bytePos = 2 - 1 - pos / 64;
-	int bitPos = pos % 64;
-	if (value)
-		this->abc[bytePos] = ((long long)1 << bitPos) | this->abc[bytePos];
-	else
-		this->abc[bytePos] = (~((long long)1 << bitPos)) & this->abc[bytePos];
+	int dataArrPos = DATA_ARR_SIZE - 1 - (QINT_BIT_SIZE - 1 - pos) / LLONG_BIT_SIZE;//Tương tự hàm getBit ở trên
+	int bitPos = (QINT_BIT_SIZE - 1 - pos) % 64;									//Tương tự hàm getBit ở trên
+	if (value)//Nếu value = 1
+		this->dataArr[dataArrPos] = ((long long)1 << bitPos) | this->dataArr[dataArrPos];//thực hiện dịch trái và toán tử | để gán bit ở vị trí pos = value
+	else//Nếu value = 0
+		this->dataArr[dataArrPos] = (~((long long)1 << bitPos)) & this->dataArr[dataArrPos];//tương tự như trường hợp value = 1 nhưng ngược lại dùng toán tử ~ và toán tử &
 }
 
-QInt QInt::operator+(const QInt& B) const
+QInt QInt::operator+(const QInt& B) const//Toán tử +
 {
-	QInt res = plusQInt(*this, B);
+	QInt res = plusQInt(*this, B);//gọi hàm plusQInt để thực hiện phép cộng
 	return res;
 }
 
-QInt QInt::operator-(const QInt& B) const
+QInt QInt::operator-(const QInt& B) const//Toán tử -
 {
-	QInt res = plusQInt(*this, B.toInverse());
+	QInt res = plusQInt(*this, B.toInverse());//Gọi hàm plusQInt để thực hiện phép cộng với số bù 2 của B
 	return res;
 }
 
-//Thuat toan Booth
-QInt QInt::operator*(const QInt& B) const
+QInt QInt::operator*(const QInt& B) const//Toán tử nhân, thực hiện theo thuật toán Booth
 {
-	if (*this == QInt::Zero() || B == QInt::Zero())
+	if (*this == QInt::Zero() || B == QInt::Zero())//Kiểm tra 1 trong 2 thừa số là 0 thì trả về Qint mặc định (Qint mặc định = 0)
 		return QInt();
 
-	QInt A;
-	QInt Q = B;
-	bool P = false;
-	for (int i = 0; i < 2 * 64; i++)
+	QInt A;//A đóng vai trò là 1 phần trong kết quả 
+	QInt res = B;//đóng vai trò kết quả sau cùng
+	bool flag = false;//đóng vai trò 1 bit nhớ 
+	for (int i = 0; i < QINT_BIT_SIZE; i++)
 	{
-		bool lsbQ = Q.getBit(0); // lay LSB cua Q
-
-		if (lsbQ == false && P == true) // 01
-			A = plusQInt(A, *this);//A = A + *this;
-		if (lsbQ == true && P == false) // 10
+		bool lsbRes = res.getBit(QINT_BIT_SIZE - 1); // lấy LSB của res
+		//Kiểm tra 2 bit cuối (bit cuối của res và flag)
+		if (lsbRes == false && flag == true) // 2 bit là 01
+			A = A + *this;
+		if (lsbRes == true && flag == false) // 2 bit là 10
 		{
-			QInt temp = *this;
-			A = plusQInt(A, temp.toInverse());//A = A - *this;
+			A = A - *this;
 		}
-		// Shift
-		P = lsbQ;
-		Q = Q >> 1;
-
-		Q.setBit(2 * 64 - 1, A.getBit(0));
-		A = A >> 1;
+		//Thực hiện dịch phải
+		flag = lsbRes;//gán bit lsb của res vào flag
+		res = res >> 1;//dịch phải res
+		res.setBit(0, A.getBit(QINT_BIT_SIZE - 1));//lấy bit cuối của A gán vào bit đầu của res
+		A = A >> 1;//dịch phải A
 	}
-	
-	return Q;
+	return res;
 }
 
-QInt QInt::operator/(const QInt& B) const
+QInt QInt::operator/(const QInt& B) const//Toán tử /
 {
-	if (B == QInt::One() || *this == QInt::Zero())
+	if (B == QInt::One() || *this == QInt::Zero())//Kiểm tra nếu số bị chia = 0 hoặc số chia = 1 thì trả về *this (số bị chia)
 		return *this;
-
-	QInt div;
-	QInt mod;
-	this->divide(B, div, mod);
-
+	QInt div;//Thương
+	QInt mod;//Số dư
+	this->divide(B, div, mod);//gọi hàm divide
 	return div;
 }
 
-bool QInt::operator>(const QInt& B) const
-{
-	bool isANegative = this->isNegative();
-	bool isBNegative = B.isNegative();
 
-	if (isANegative + isBNegative == 1)//A va B trai dau
+
+bool QInt::operator==(const QInt& B) const//Toán tử so sánh bằng nhau
+{
+	for (int i = 0; i < DATA_ARR_SIZE; i++)//vòng lặp qua các phần tử trong mảng dataArr của QInt
 	{
-		if (isANegative)
-			return false;
-		else
-			return true;
+		if (this->dataArr[i] != B.dataArr[i])//So sánh từng phần tử với nhau
+			return false;//nếu tồn tại 1 phần tử khác nhau thì trả về false 
 	}
+	return true;//nếu tất cả đều không có phần tử nào khác nhau thì trả về true
+}
 
-	for (int i = 0; i < 2; i++)
+bool QInt::operator!=(const QInt& B) const//toán tử so sánh khác nhau
+{
+	return !(*this == B);//gọi phủ định của toán tử so sánh bằng nhau
+}
+
+
+QInt& QInt::operator=(const QInt& B)//toán tử gán
+{
+	for (int i = 0; i < DATA_ARR_SIZE; i++)//lặp qua tất cả các phần tử trong mảng dataArr
 	{
-		//A>B
-		if (this->abc[i] > B.abc[i])
-			return true;
-
-		//A<B
-		if (this->abc[i] < B.abc[i])
-			return false;
-	}
-	return false;
-}
-
-bool QInt::operator<(const QInt& B) const
-{
-	bool isANegative = this->isNegative();
-	bool isBNegative = B.isNegative();
-
-	if (isANegative + isBNegative == 1) //A va B trai dau nhau
-	{
-		if (isANegative)
-			return true;
-		else return false;
-	}
-
-	for (int i = 0; i < 2; i++)
-	{
-		//A > B
-		if (this->abc[i] > B.abc[i])
-			return false;
-		//A < B
-		if (this->abc[i] < B.abc[i])
-			return true;
-	}
-	return false;
-}
-
-bool QInt::operator==(const QInt& B) const
-{
-	for (int i = 0; i < 2; i++)
-	{
-		if (this->abc[i] != B.abc[i])
-			return false;
-	}
-	return true;
-}
-
-bool QInt::operator!=(const QInt& B) const
-{
-	return !(*this == B);
-}
-
-bool QInt::operator>=(const QInt& B) const
-{
-	return !(*this < B);
-}
-
-bool QInt::operator<=(const QInt& B) const
-{
-	return !(*this > B);
-}
-
-QInt& QInt::operator=(const QInt& B)
-{
-	for (int i = 0; i < 2; i++)
-	{
-		this->abc[i] = B.abc[i];
+		this->dataArr[i] = B.dataArr[i];//gán từng phần tử
 	}
 	return *this;
 }
 
-QInt QInt::operator&(const QInt& B) const
+QInt QInt::operator&(const QInt& B) const//toán tử & (and)
 {
 	QInt res;
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < DATA_ARR_SIZE; i++)//lặp qua từng phần tử
 	{
-		res.abc[i] = this->abc[i] & B.abc[i];
+		res.dataArr[i] = this->dataArr[i] & B.dataArr[i];//gọi toán tử & cho từng cặp phần tử
 	}
 	return res;
 }
 
-QInt QInt::operator|(const QInt& B) const
+QInt QInt::operator|(const QInt& B) const//toán tử | (or)
 {
 	QInt res;
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < DATA_ARR_SIZE; i++)//lặp qua từng phần tử
 	{
-		res.abc[i] = this->abc[i] | B.abc[i];
+		res.dataArr[i] = this->dataArr[i] | B.dataArr[i];//gọi toán tử | cho từng cặp phần tử
 	}
 	return res;
 }
 
-QInt QInt::operator^(const QInt& B) const
+QInt QInt::operator^(const QInt& B) const//toán tử ^ (xor)
 {
 	QInt res;
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < DATA_ARR_SIZE; i++)//lặp qua từng phần tử
 	{
-		res.abc[i] = this->abc[i] ^ B.abc[i];
+		res.dataArr[i] = this->dataArr[i] ^ B.dataArr[i];//gọi toán tử | cho từng cặp phần tử
 	}
 	return res;
 }
 
-QInt QInt::operator~() const
+QInt QInt::operator~() const//Toán tử ~ (not)
 {
 	QInt res;
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < DATA_ARR_SIZE; i++)//lặp qua từng phần tử
 	{
-		res.abc[i] = ~this->abc[i];
+		res.dataArr[i] = ~this->dataArr[i];//gọi toán tử ~ cho từng phần tử
 	}
 	return res;
 }
 
-QInt QInt::operator>>(int nums) const
+QInt QInt::operator>>(int nums) const//toán tử dịch phải, truyền vào nums là số lần dịch
 {
-	QInt res = *this;
-	bool msb = this->getBit(2 * 64 - 1);
-	while (nums > 0)
+	QInt res = *this;//res đóng vai trò là kết quả sau khi dịch
+	bool msb = this->getBit(0);//lưu bit MSB
+	while (nums > 0)//lặp lại nums lần
 	{
-		res.abc[1] = res.abc[1] >> 1;
-		res.setBit(63, 0);
-		if (res.abc[0] & 1)		
-			res.abc[1] = (((long long)1 << 63) | res.abc[1]);
-		res.abc[0] = res.abc[0] >> 1;
-		res.setBit(2 * 64 - 1, msb);
+		res.dataArr[1] = res.dataArr[1] >> 1;//dịch phải phần tử thứ 2 của mảng dataArr
+		res.setBit(64, res.getBit(63));//gán bit đầu tiên của phần tử thứ 2 bằng bit cuối cùng của phần tử thứ nhất
+		res.dataArr[0] = res.dataArr[0] >> 1;//dịch phải phần tử đầu tiên của mảng dataArr
+		res.setBit(0, msb);//gán bit đầu tiên của phần tử thứ nhất là bit MSB
 		nums--;
 	}
 	return res;
 }
 
-QInt QInt::operator<<(int nums) const
+QInt QInt::operator<<(int nums) const//toán tử dịch trái, truyền vào nums là số lần dịch
 {
-	QInt res = *this;
-	while (nums > 0)
+	QInt res = *this;//res lưu kết quả sau khi dịch
+	while (nums > 0)//lặp lại nums lần
 	{
-		for (int i = 0; i < 2 - 1; i++)
-		{
-			res.abc[i] = res.abc[i] << 1;
-			if ((res.abc[i + 1] >> 63) & 1)
-			{
-				res.abc[i] = (1 | res.abc[i]);
-			}
-		}
-		res.abc[2 - 1] = res.abc[2 - 1] << 1;
+		res.dataArr[0] = res.dataArr[0] << 1;//thực hiện dịch trái phần tử đầu tiên trong mảng dataArr
+		res.setBit(63, res.getBit(64));//gán bit cuối cùng của phần tử đầu tiên bằng bit đầu tiên của phần tử thứ 2
+		res.dataArr[1] = res.dataArr[1] << 1;//dịch trái phần tử thứ hai trong mảng dataArr
 		nums--;
 	}
 	return res;
 }
 
-string divByTwo(string src)
+string divByTwo(string src)//hàm chia số lưu dưới dạng chuỗi (src) cho 2
 {
-	string res = "";
-
-	int additive = 0;
-	for (int i = 0; i < src.length(); i++)
+	string res = "";//biến lưu kết quả
+	int additive = 0;//biến nhớ
+	for (int i = 0; i < src.length(); i++)//lặp qua từng số trong chuỗi
 	{
-		int digit = src[i] - '0';
-		res += ((digit / 2 + additive) + '0');
-		additive = ((digit % 2 == 0) ? 0 : 5);
+		int digit = src[i] - '0';//chuyển số sang kiểu int
+		res += ((digit / 2 + additive) + '0');//chia số đó cho 2 và chuyển sang kiểu string sau đó thêm vào res
+		if (digit % 2 == 0)//nếu số đó chia hết cho 2
+			additive = 0;//lưu biến nhớ = 0
+		else//nếu không chia hết cho 2
+			additive = 5;//lưu biến nhớ = 5
 	}
-
-	if (res[0] == '0' && res.length() > 1)
+	if (res[0] == '0' && res.length() > 1)//vòng lặp xóa số 0 dư ở đầu chuỗi res
 		res.erase(0, 1);
 	return res;
 }
 
-string mulByTwo(string src, int additive)
+string mulByTwo(string src, int additive)//hàm nhân số lưu dưới dạng chuỗi (src) với 2 
+										 //hàm này chỉ sử dụng để hỗ trợ cho hàm binToDec nên có thêm tham số additive để lưu biến nhớ
 {
-	string res = "";
+	string res = "";//biến lưu kết quả
 	int carry = additive;
 
 	for (int i = src.length() - 1; i >= 0; i--)
@@ -303,47 +224,27 @@ string mulByTwo(string src, int additive)
 	return res;
 }
 
-QInt QInt::rol(int nums) const
+QInt QInt::rol() const//need to repair
 {
 	QInt res = *this;
-	while (nums > 0)
-	{
-		bool additive = ((res.abc[0] >> 63) & 1);
-		for (int i = 0; i < 2 - 1; i++)
-		{
-			res.abc[i] = res.abc[i] << 1;
-			if ((res.abc[i + 1] >> 63) & 1)
-			{
-				res.abc[i] = (1 | res.abc[i]);
-			}
-		}
-		res.abc[2 - 1] = res.abc[2 - 1] << 1;
-		if (additive)
-			res.abc[2 - 1] = (1 | res.abc[2 - 1]);
-		nums--;
-	}
+	bool additive = ((res.dataArr[0] >> 63) & 1);
+	res.dataArr[0] = res.dataArr[0] << 1;
+	res.setBit(63, res.getBit(64));
+	res.dataArr[1] = res.dataArr[1] << 1;
+	if (additive)
+		res.setBit(127, additive);
 	return res;
 }
 
-QInt QInt::ror(int nums) const
+QInt QInt::ror() const//need to repair
 {
 	QInt res = *this;
-	while (nums > 0)
-	{
-		bool additive = (res.abc[2 - 1] & 1);
-		for (int i = 2 - 1; i >= 1; i--)
-		{
-			res.abc[i] = res.abc[i] >> 1;
-			if (res.abc[i - 1] & 1)
-			{
-				res.abc[i] = (((long long)1 << 63) | res.abc[i]);
-			}
-		}
-		res.abc[0] = res.abc[0] >> 1;
-		if (additive)
-			res.abc[0] = (((long long)1 << 63) | res.abc[0]);
-		nums--;
-	}
+	bool additive = (res.dataArr[1] & 1);
+	res.dataArr[1] = res.dataArr[1] >> 1;
+	res.setBit(64, res.getBit(63));
+	res.dataArr[0] = res.dataArr[0] >> 1;
+	if (additive)
+		res.setBit(0, additive);
 	return res;
 }
 
@@ -356,29 +257,29 @@ void QInt::divide(const QInt& divisor, QInt& div, QInt& mod) const
 	// Luu lai dau cua phep chia.
 	bool isDNegative = div.isNegative();
 	bool isMNegative = M.isNegative();
-	if (div.getBit(2 * 64 - 1) == true) // Bao dam div va M luon >= 0
+	if (div.getBit(0) == true) // Bao dam div va M luon >= 0
 	{
 		QInt A;
 		//div = A-div;
 		div = plusQInt(A, div.toInverse());
 	}
-	if (M.getBit(2 * 64 - 1) == true)
+	if (M.getBit(0) == true)
 	{
 		QInt A;
 		//M = A-M;
 		M = plusQInt(A, M.toInverse());
 	}
-	for (int i = 0; i < 2 * 64; i++) // Thuc hien chia theo thuat toan trong tai lieu.
+	for (int i = 0; i < QINT_BIT_SIZE; i++) // Thuc hien chia theo thuat toan trong tai lieu.
 	{
 		mod = mod << 1;
-		mod.setBit(0, div.getBit(2 * 64 - 1)); // Copy MSB cua Q vao LSB cua A.
+		mod.setBit(QINT_BIT_SIZE - 1, div.getBit(0)); // Copy MSB cua Q vao LSB cua A.
 		div = div << 1;
 		//QInt tmp = mod - M;
 		QInt tmp = plusQInt(mod, M.toInverse());
-		if (tmp.getBit(2 * 64 - 1) == false) // tmp >= 0
+		if (tmp.getBit(0) == false) // tmp >= 0
 		{
 			mod = tmp;
-			div.setBit(0, 1);
+			div.setBit(QINT_BIT_SIZE - 1, 1);
 		}
 	}
 
@@ -426,25 +327,25 @@ QInt hexToBin(string src)
 	return res;
 }
 
-string binToDec(const QInt& src)
+string binToDec(const QInt& src)//hàm chuyển đổi từ dãy nhị phân sang thập phân
 {
-	string res = "";
-	if (src == QInt::Zero())
+	string res = "";//biến lưu kết quả
+	if (src == QInt::Zero())//nếu chuỗi là 0
 	{
-		res = "0";
+		res = "0";//gán res = 0 và trả về res
 		return res;
 	}
 
-	QInt posSrc = src;
-	if (src.isNegative())
+	QInt tempSrc = src;//gán src vào 1 QInt tạm
+	if (src.isNegative())//Nếu là số âm
 	{
-		posSrc = posSrc.toInverse();
+		tempSrc = tempSrc.toInverse();//chuyển qua bù 2 để thành số dương
 	}
 
-	string binStr = posSrc.toBinStr();
-	int pos = binStr.find('1', 0) + 1;
-	res = "1";
-	while (pos < binStr.length())
+	string binStr = tempSrc.toBinStr();//chuyển từ dạy nhị phân trong QInt sang chuỗi nhị phân
+	int pos = binStr.find('1', 0) + 1;//Tìm vị trí của bit 1 đầu tiên trong chuỗi
+	res = "1";//
+	while (pos < binStr.length())//duyệt qua từng phần tử trong chuỗi binStr
 	{
 		int additive = binStr[pos] - '0';
 		res = mulByTwo(res, additive);
@@ -460,24 +361,28 @@ string binToDec(const QInt& src)
 string binToHex(const QInt& src)
 {
 	string res = "";
-	stringstream ss;
-	for (int i = 0; i < 2; i++)
+	string stringSrc = src.toBinStr();
+	int num = stringSrc.length() % 4;
+	while (num != 0 && num < 4)
 	{
-		ss << hex << src.abc[i];
-		res += ss.str();
-		ss.str("");
+		stringSrc = '0' + stringSrc;
+		num++;
+	}
+	int L = stringSrc.length();
+	for (int i = 0; i < L; i += 4)
+	{
+		int pos = bitset<4>(stringSrc.substr(i, 4)).to_ulong();
+		res += HEX_CHAR[pos];
 	}
 	while (res[0] == '0' && res.length() > 1)
 		res.erase(0, 1);
-	res = Upstring(res);
 	return res;
 }
-
 QInt plusQInt(const QInt& A, const QInt& B)
 {
 	QInt res;
 	bool carry = 0;
-	for (int i = 0; i <= 2 * 64 - 1; i++)
+	for (int i = 127; i >= 0; i--)
 	{
 		int temp = A.getBit(i) + B.getBit(i) + carry;
 		switch (temp)
@@ -516,7 +421,7 @@ string Upstring(string a)
 
 bool QInt::isNegative() const
 {
-	return ((this->getBit(2 * 64 - 1)) == 1);
+	return ((this->getBit(0)) == 1);
 }
 
 QInt QInt::toInverse() const
@@ -530,22 +435,24 @@ QInt QInt::toInverse() const
 	res = ~(*this);
 
 	//+1
-	for (int i = 2 - 1; i >= 0; i--)
+	for (int i = DATA_ARR_SIZE - 1; i >= 0; i--)
 	{
-		if (res.abc[i] < 9223372036854775807)
+		if (res.dataArr[i] < LLONG_MAX)
 		{
-			res.abc[i] += 1;
+			res.dataArr[i] += 1;
 			break;
 		}
 		else
-			res.abc[i] = 0;
+		{
+			res.dataArr[i] = 0;
+		}	
 	}
 	return res;
 }
 
 void QInt::scanQInt(string src, int base)
 {
-	int bitPos = 0;
+	int bitPos = QINT_BIT_SIZE - 1;
 	switch (base)
 	{
 	case 2:
@@ -553,7 +460,7 @@ void QInt::scanQInt(string src, int base)
 		for (int i = src.length() - 1; i >= 0; i--)
 		{
 			setBit(bitPos, src[i] == '1');
-			bitPos++;
+			bitPos--;
 		}
 		break;
 	case 10:
@@ -587,9 +494,9 @@ void QInt::printQInt(int base)
 string QInt::toBinStr() const
 {
 	string res = "";
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < DATA_ARR_SIZE; i++)
 	{
-		res += bitset<64>(this->abc[i]).to_string();
+		res += bitset<LLONG_BIT_SIZE>(this->dataArr[i]).to_string();
 	}
 	return res;
 }
