@@ -203,27 +203,20 @@ string divByTwo(string src)//hàm chia số lưu dưới dạng chuỗi (src) ch
 	return res;
 }
 
-string mulByTwo(string src, int additive)//hàm nhân số lưu dưới dạng chuỗi (src) với 2 
-										 //hàm này chỉ sử dụng để hỗ trợ cho hàm binToDec nên có thêm tham số additive để lưu biến nhớ
+string mulByTwo(string src, int additive)//
 {
 	string res = "";//biến lưu kết quả
-	int carry = additive;
-
 	for (int i = src.length() - 1; i >= 0; i--)
 	{
 		int temp = src[i] - '0';
-		temp = temp * 2 + carry;
-		res += (temp % 10 + '0');
-		carry = temp / 10;
+		temp = temp * 2 + additive;
+		res = (char)(temp % 10 + '0') + res;
+		additive = temp / 10;
 	}
-	if (carry > 0)
-		res += (carry + '0');
-
-	reverse(res.begin(), res.end());
-
+	if (additive > 0)
+		res = (char)(additive + '0') + res;
 	return res;
 }
-
 QInt QInt::rol() const//need to repair
 {
 	QInt res = *this;
@@ -362,12 +355,6 @@ string binToHex(const QInt& src)
 {
 	string res = "";
 	string stringSrc = src.toBinStr();
-	int num = stringSrc.length() % 4;
-	while (num != 0 && num < 4)
-	{
-		stringSrc = '0' + stringSrc;
-		num++;
-	}
 	int L = stringSrc.length();
 	for (int i = 0; i < L; i += 4)
 	{
