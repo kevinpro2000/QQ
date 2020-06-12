@@ -241,13 +241,13 @@ QInt QInt::ror() const//Hàm quay phải
 	return res;
 }
 
-//Ham ho tro / 2 so QInt
-void QInt::divide(const QInt& divisor, QInt& div, QInt& mod) const
+
+void QInt::divide(const QInt& divisor, QInt& div, QInt& mod) const//Hàm hỗ trợ toán tử /
 {
 	mod = QInt::Zero();//Biến lưu giá trị dư trong phép chia
 	div = *this;//Biến
 	QInt M = divisor;//Lưu lại số chia
-	// Luu lai dau cua phep chia.
+	//Lưu lại dấu của phép chia
 	bool isDNegative = div.isNegative();//Biến lưu dấu của thương
 	bool isMNegative = M.isNegative();//Biến lưu dấu của số chia
 	if (div.getBit(0) == true) // Bao dam div va M luon >= 0
@@ -262,10 +262,10 @@ void QInt::divide(const QInt& divisor, QInt& div, QInt& mod) const
 		//M = A-M;
 		M = plusQInt(A, M.toInverse());
 	}
-	for (int i = 0; i < QINT_BIT_SIZE; i++) // Thuc hien chia theo thuat toan
+	for (int i = 0; i < QINT_BIT_SIZE; i++) //Thực hiện chia theo thuật toán
 	{
 		mod = mod << 1;//Dịch trái số dư 1 lần
-		mod.setBit(QINT_BIT_SIZE - 1, div.getBit(0)); // Copy MSB cua Q vao LSB cua A.
+		mod.setBit(QINT_BIT_SIZE - 1, div.getBit(0)); // Copy MSB của Q vào LSB của A.
 		div = div << 1;//Dịch trái thương 1 lần
 		//QInt tmp = mod - M;
 		QInt tmp = plusQInt(mod, M.toInverse());
@@ -276,9 +276,9 @@ void QInt::divide(const QInt& divisor, QInt& div, QInt& mod) const
 		}
 	}
 
-	if (isDNegative)		//So du va so bi chia cung dau
+	if (isDNegative)		//Số dư và số bị chia cùng dấu
 		mod = mod.toInverse();
-	if (isDNegative + isMNegative == 1) //Neu so bi chia va so chia trai dau thi doi dau thuong
+	if (isDNegative + isMNegative == 1) //Nếu số chia và số bị chia trái dấu thì đổi dấu thương
 		div = div.toInverse();
 }
 
@@ -432,7 +432,7 @@ QInt QInt::toInverse() const//Hàm bù 2
 		else//Nếu 64 bit thứ i lớn hơn giá trị lớn nhất của số long long thì mang giá trị 0
 		{
 			res.dataArr[i] = 0;
-		}	
+		}
 	}
 	return res;
 }
@@ -461,7 +461,7 @@ void QInt::scanQInt(string src, int base)//Hàm đọc chuỗi đầu vào
 void QInt::printQInt(int base)//Hàm in số QInt
 {
 	string res;
-	switch (base)
+	switch (base)//Truyền vào base là chỉ thị của hệ (2, 10 hay 16)
 	{
 	case 2:
 		res = toBinStr();

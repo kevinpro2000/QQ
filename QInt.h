@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <iostream>
 #include <string>
 #include <bitset>
@@ -13,51 +13,51 @@ using namespace std;
 class QInt
 {
 private:
-	long long dataArr[2];
+	long long dataArr[2];//Dùng kiểu long long (64 bit) để lưu 128 bit dữ liệu
 public:
-	QInt();
-	~QInt();
+	QInt();//Hàm constructor mặc định
+	~QInt();//Hàm destructor mặc định
 
-	static QInt One();
-	static QInt Zero();
+	static QInt One();//Hàm khởi tạo số 1 dưới kiểu QInt
+	static QInt Zero();//Hàm khởi tạo số 0 dưới kiểu QInt
 
-	void scanQInt(string src, int base);
-	void printQInt(int base);
+	void scanQInt(string src, int base);//Hàm đọc chuỗi đầu vào dưới dạng chỉ thị base (2, 10 hay 16)
+	void printQInt(int base);//Hàm in chuỗi dưới dạng base (2, 10 hay 16)
 
-	bool getBit(int pos) const;
-	void setBit(int pos, bool value);
+	bool getBit(int pos) const;//Hàm lấy bit ở vị trí pos
+	void setBit(int pos, bool value);//Hàm gán bit ở vị trí pos = 1 value
 
-	QInt operator+ (const QInt& B) const;
-	QInt operator- (const QInt& B) const;
-	QInt operator* (const QInt& B) const;
-	QInt operator/ (const QInt& B) const;
-
-
-	bool operator== (const QInt& B) const;
-	bool operator!= (const QInt& B) const;
-	QInt& operator= (const QInt& B);
-
-	QInt operator& (const QInt& B) const;
-	QInt operator| (const QInt& B) const;
-	QInt operator^ (const QInt& B) const;
-	QInt operator~ () const;
-
-	QInt operator>> (int nums) const;
-	QInt operator<< (int nums) const;
-	QInt rol() const;
-	QInt ror() const;
+	QInt operator+ (const QInt& B) const;//Toán tử +
+	QInt operator- (const QInt& B) const;//Toán tử -
+	QInt operator* (const QInt& B) const;//Toán tử *
+	QInt operator/ (const QInt& B) const;//Toán tử /
 
 
-	void divide(const QInt& divisor, QInt& div, QInt& mod) const;
-	friend QInt plusQInt(const QInt& A, const QInt& B);
+	bool operator== (const QInt& B) const;//Toán tử so sánh bằng
+	bool operator!= (const QInt& B) const;//Toán tử so sánh khác
+	QInt& operator= (const QInt& B);//Toán tử gán mặc định
 
-	friend QInt decToBin(string src);
-	friend QInt hexToBin(string src);
-	friend string binToDec(const QInt& src);
-	friend string binToHex(const QInt& src);
+	QInt operator& (const QInt& B) const;//Toán tử &(and)
+	QInt operator| (const QInt& B) const;//Toán tử |(or)
+	QInt operator^ (const QInt& B) const;//Toán tử ^(xor)
+	QInt operator~ () const;//Toán tử ~ (not)
 
-	bool isNegative() const;
-	QInt toInverse() const;
+	QInt operator>> (int nums) const;//Toán tử dịch phải nums bit (dịch số học)
+	QInt operator<< (int nums) const;//Toán tử dịch trái nums bit (dịch số học)
+	QInt rol() const;//phép xoay trái
+	QInt ror() const;//phép xoay phải
 
-	string toBinStr() const;
+
+	void divide(const QInt& divisor, QInt& div, QInt& mod) const;//Hàm chia (hỗ trợ cho toán tử chia phía trên) truyền vào số QInt divisor, thương là div, số dư là mod
+	friend QInt plusQInt(const QInt& A, const QInt& B);//Hàm cộng (hỗ trợ toán tử cộng)
+
+	friend QInt decToBin(string src);//Hàm chuyển đổi từ thập phân sang nhị phân (truyền vào chuỗi src dạng dec)
+	friend QInt hexToBin(string src);//Hàm chuyển đổi từ thập lục phân sang nhị phân (truyền vào chuỗi src dạng hex)
+	friend string binToDec(const QInt& src);//Hàm chuyển đổi từ nhị phân sang thập phân (truyền vào số QInt src)
+	friend string binToHex(const QInt& src);//Hàm chuyển đổi từ nhị phân sang thập lục phân (truyền vào số QInt src)
+
+	bool isNegative() const;//Hàm kiểm tra số âm
+	QInt toInverse() const;//Hàm bù 2
+
+	string toBinStr() const;//Hàm chuyển chuỗi sang dạng chuỗi nhị phân
 };
